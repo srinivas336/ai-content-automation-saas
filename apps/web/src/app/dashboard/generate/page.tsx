@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function GeneratePage() {
   const [platform, setPlatform] = useState("Instagram");
@@ -20,10 +21,19 @@ export default function GeneratePage() {
     setResult("");
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("You must be logged in.");
+      }
+
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           platform,
@@ -39,9 +49,9 @@ export default function GeneratePage() {
       }
 
       setResult(data.text);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setResult("Something went wrong while generating content.");
+      alert(error.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -57,17 +67,15 @@ export default function GeneratePage() {
   return (
     <main className="min-h-screen bg-slate-950 p-10 text-white">
       <div className="mx-auto max-w-4xl">
-
         <h1 className="text-4xl font-bold">
           AI Content Generator
         </h1>
 
         <p className="mt-2 text-slate-400">
-          Generate engaging social media content using Gemini AI.
+          Generate engaging social media content using AI.
         </p>
 
         <div className="mt-10 space-y-6 rounded-xl border border-slate-800 bg-slate-900 p-8">
-
           <div>
             <label className="mb-2 block font-medium">
               Platform
@@ -122,12 +130,10 @@ export default function GeneratePage() {
           >
             {loading ? "Generating..." : "Generate Content"}
           </button>
-
         </div>
 
         {result && (
           <div className="mt-10 rounded-xl border border-slate-800 bg-slate-900 p-8">
-
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
                 Generated Content
@@ -144,10 +150,8 @@ export default function GeneratePage() {
             <pre className="whitespace-pre-wrap font-sans text-slate-200">
               {result}
             </pre>
-
           </div>
         )}
-
       </div>
     </main>
   );
